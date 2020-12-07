@@ -15,10 +15,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // Try to remove title (action) bar
-        try
-        {
-            this.getSupportActionBar()?.hide()
-        } catch (e: NullPointerException) { }
+        //try
+        //{
+        //    this.getSupportActionBar()?.hide()
+        //} catch (e: NullPointerException) { }
 
         // Ask for permission (Android 6.0+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
