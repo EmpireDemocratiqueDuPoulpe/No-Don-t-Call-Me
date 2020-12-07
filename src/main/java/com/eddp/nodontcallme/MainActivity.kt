@@ -1,14 +1,32 @@
 package com.eddp.nodontcallme
 
 import android.Manifest
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
+import android.view.View
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val PERMISSION_REQUEST_READ_PHONE_STATE = 0
+    private val BLOCKER_RUNNING = 0
+    private val BLOCKER_STOPPED = 1
+
+    private lateinit var howToUse: RelativeLayout
+    private lateinit var startBlockerBtn: Button
+
+    private var shortAnimationDuration: Int = 0
+    private lateinit var sBBTextOn: String
+    private lateinit var sBBTextOff: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,6 +49,18 @@ class MainActivity : AppCompatActivity() {
                 requestPermissions(permissions, PERMISSION_REQUEST_READ_PHONE_STATE)
             }
         }
+
+        // Get elements
+        howToUse = findViewById(R.id.how_to_use)
+        startBlockerBtn = findViewById(R.id.btn_start_blocker)
+
+        // Init anims
+        shortAnimationDuration = resources.getInteger(android.R.integer.config_shortAnimTime)
+        sBBTextOn = resources.getString(R.string.btn_end_blocker)
+        sBBTextOff = resources.getString(R.string.btn_start_blocker)
+
+        // Add events listeners
+        startBlockerBtn.setOnClickListener(this)
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -45,5 +75,49 @@ class MainActivity : AppCompatActivity() {
                 return
             }
         }
+    }
+
+    override fun onClick(view: View) {
+        when (view.getId()) {
+            R.id.btn_start_blocker -> {
+                if (blockerState() == BLOCKER_RUNNING) {
+                    endBlocker()
+                } else {
+                    startBlocker()
+                }
+            }
+        }
+    }
+
+    private fun blockerState() : Int {
+        return if (startBlockerBtn.text.equals(sBBTextOn)) BLOCKER_RUNNING else BLOCKER_STOPPED
+    }
+
+    private fun startBlocker() {
+        howToUse.animate()
+                .alpha(0f)
+                .y(-500f)
+                .setDuration(shortAnimationDuration.toLong())
+                .setListener(object: AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator?) {
+                        howToUse.visibility = View.GONE
+                    }
+                })
+
+        startBlockerBtn.setText(sBBTextOn)
+    }
+
+    private fun endBlocker() {
+        howToUse.animate()
+                .alpha(1f)
+                .y(0f)
+                .setDuration(shortAnimationDuration.toLong())
+                .setListener(object: AnimatorListenerAdapter() {
+                    override fun onAnimationStart(animation: Animator?) {
+                        howToUse.visibility = View.VISIBLE
+                    }
+                })
+
+        startBlockerBtn.setText(sBBTextOff)
     }
 }
