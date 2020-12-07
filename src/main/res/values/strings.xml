@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">No Don\'t Call Me</string>
+    <string name="btn_start_blocker">Start call blocker</string>
+    <string name="btn_end_blocker">End call blocker</string>
+</resources>

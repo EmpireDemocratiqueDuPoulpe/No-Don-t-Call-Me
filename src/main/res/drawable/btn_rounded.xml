@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- DISABLED -->
+    <item android:state_enabled="false" android:color="@color/white">
+        <shape android:shape="oval">
+            <solid android:color="@color/black"/>
+        </shape>
+    </item>
+
+    <!-- ENABLED + PRESSED -->
+    <item android:state_enabled="true" android:state_pressed="true" android:color="@color/white">
+        <!--<shape android:shape="oval">
+            <solid android:color="@color/white"/>
+        </shape>-->
+        <layer-list>
+            <item android:right="10dp" android:top="10dp">
+                <shape android:shape="oval">
+                    <solid android:color="@color/purple_700"/>
+                </shape>
+            </item>
+            <item android:bottom="5dp" android:left="5dp" android:right="5dp" android:top="5dp">
+                <shape android:shape="oval">
+                    <solid android:color="@color/purple_500"/>
+                    <!--<padding android:bottom="5dp" android:left="5dp"/> NOT WORKING-->
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+
+    <!-- ENABLED + FOCUSED -->
+    <item android:state_enabled="true" android:state_focused="true" android:color="@color/white">
+        <shape android:shape="oval">
+            <solid android:color="@color/cardview_dark_background"/>
+        </shape>
+    </item>
+
+    <!-- ENABLED -->
+    <item android:state_enabled="true" android:color="@color/white">
+        <!--<shape android:shape="oval">
+            <solid android:color="@color/purple_500"/>
+        </shape>-->
+        <layer-list>
+            <item android:right="10dp" android:top="10dp">
+                <shape android:shape="oval">
+                    <solid android:color="@color/purple_700"/>
+                </shape>
+            </item>
+            <item android:bottom="10dp" android:left="10dp">
+                <shape android:shape="oval">
+                    <solid android:color="@color/purple_500"/>
+                    <padding android:bottom="10dp" android:left="10dp"/>
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+</selector>
