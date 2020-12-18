@@ -3,6 +3,9 @@ package com.eddp.nodontcallme
 import android.Manifest
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
+import android.app.ActivityManager
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -18,8 +21,11 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val PERMISSION_REQUEST_READ_PHONE_STATE = 0
-    private val BLOCKER_RUNNING = 0
-    private val BLOCKER_STOPPED = 1
+    //private val BLOCKER_RUNNING = 0
+    //private val BLOCKER_STOPPED = 1
+
+    private var serviceIntent: Intent? = null
+    private var callBlockerService: CallBlockerService? = null
 
     private lateinit var howToUse: RelativeLayout
     private lateinit var startBlockerBtn: Button
@@ -32,13 +38,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Try to remove title (action) bar
-        //try
-        //{
-        //    this.getSupportActionBar()?.hide()
-        //} catch (e: NullPointerException) { }
-
         // Ask for permission (Android 6.0+)
+        // TODO("CHECK IF NEEDED")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_DENIED ||
                     checkSelfPermission(Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_DENIED ||
@@ -47,6 +48,17 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 val permissions: Array<String> = arrayOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_CALL_LOG, Manifest.permission.CALL_PHONE, Manifest.permission.ANSWER_PHONE_CALLS)
 
                 requestPermissions(permissions, PERMISSION_REQUEST_READ_PHONE_STATE)
+            }
+        }
+
+        // Get service
+        callBlockerService = CallBlockerService()
+
+        if (callBlockerService != null) {
+            serviceIntent = Intent(this, callBlockerService!!::class.java)
+
+            if (!isServiceRunning(callBlockerService!!::class.java)) {
+                startService(serviceIntent)
             }
         }
 
@@ -61,6 +73,19 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         // Add events listeners
         startBlockerBtn.setOnClickListener(this)
+    }
+
+    // TODO("See https://stackoverflow.com/questions/45817813/alternate-of-activitymanager-getrunningservicesint-after-oreo")
+    private fun isServiceRunning(serviceClass: Class<*>): Boolean {
+        val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+
+        for (service in manager.getRunningServices(Int.MAX_VALUE)) {
+            if (serviceClass.name == service.service.className) {
+                return true
+            }
+        }
+
+        return false
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -80,17 +105,20 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     override fun onClick(view: View) {
         when (view.getId()) {
             R.id.btn_start_blocker -> {
-                if (blockerState() == BLOCKER_RUNNING) {
-                    endBlocker()
-                } else {
-                    startBlocker()
-                }
+                // CODE
             }
         }
     }
 
-    private fun blockerState() : Int {
-        return if (startBlockerBtn.text.equals(sBBTextOn)) BLOCKER_RUNNING else BLOCKER_STOPPED
+    override fun onDestroy() {
+        //stopService(mServiceIntent);
+
+        val broadcastIntent = Intent()
+        broadcastIntent.action = "restartservice"
+        broadcastIntent.setClass(this, Restarter::class.java)
+        this.sendBroadcast(broadcastIntent)
+
+        super.onDestroy()
     }
 
     private fun startBlocker() {

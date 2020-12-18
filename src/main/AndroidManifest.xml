@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.eddp.nodontcallme">
 
+    <!--<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>-->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS"/>
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
     <uses-permission android:name="android.permission.READ_CALL_LOG"/>
@@ -24,11 +26,21 @@
             </intent-filter>
         </activity>
 
-        <receiver android:name=".IncomingCallReceiver" android:enabled="true" android:exported="true">
+        <receiver android:name=".Restarter" android:enabled="true" android:exported="true"
+            android:permission="">
             <intent-filter>
-                <action android:name="android.intent.action.PHONE_STATE"/>
+                <action android:name="restartservice"/>
             </intent-filter>
         </receiver>
+
+        <!--<receiver android:name=".CallBlocker" android:enabled="true" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.PHONE_STATE"/>
+            </intent-filter>
+        </receiver>-->
+
+        <service android:name=".CallBlockerService" android:enabled="true"/>
     </application>
 
 </manifest>
