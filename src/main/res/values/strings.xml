@@ -2,6 +2,6 @@
     <string name="app_name">No Don\'t Call Me</string>
     <string name="how_to_use_title">How do I use it?</string>
     <string name="how_to_use_desc">Just press the big button. Yeah it\'s this easy. The Call Blocker will begin its hard work to reject every incoming call. Don\'t worry about emergency. If someone call you twice, the next calls from him aren\'t blocked anymore.</string>
-    <string name="btn_start_blocker">Start call blocker</string>
-    <string name="btn_end_blocker">End call blocker</string>
+    <string name="btn_blocker_started">End call blocker</string>
+    <string name="btn_blocker_stopped">Start call blocker</string>
 </resources>

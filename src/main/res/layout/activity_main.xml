@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <RelativeLayout
+    <com.eddp.nodontcallme.views.AnimatedHowToUse
         android:id="@+id/how_to_use"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -35,7 +35,7 @@
             android:textSize="15sp"
             android:textColor="@color/black"/>
 
-    </RelativeLayout>
+    </com.eddp.nodontcallme.views.AnimatedHowToUse>
 
     <android.widget.Button
         android:id="@+id/btn_start_blocker"
@@ -44,7 +44,7 @@
         android:layout_width="200dp"
         android:layout_height="200dp"
         android:layout_marginTop="35dp"
-        android:text="@string/btn_start_blocker"
+        android:text="@string/btn_blocker_stopped"
         android:background="@drawable/btn_rounded"
         android:textColor="@drawable/btn_rounded"/>
 

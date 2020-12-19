@@ -18,9 +18,9 @@ import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import java.lang.Exception
 import java.lang.reflect.Method
 import java.util.*
+
 
 /******************************************
 * # Call Blocker service
@@ -130,11 +130,12 @@ class CallBlockerService : Service() {
         super.onDestroy()
         stopCallBlocker()
 
-        val restartBroadcast = Intent()
-        restartBroadcast.action = "restartservice"
-        restartBroadcast.setClass(this, Restarter::class.java)
-        this.sendBroadcast(restartBroadcast)
+        //val restartBroadcast = Intent()
+        //restartBroadcast.action = "restartservice"
+        //restartBroadcast.setClass(this, Restarter::class.java)
+        //this.sendBroadcast(restartBroadcast)
     }
+
 
     private fun stopCallBlocker() {
         if (broadcastReceiver != null) {
