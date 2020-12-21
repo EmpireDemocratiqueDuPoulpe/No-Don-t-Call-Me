@@ -6,11 +6,9 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.os.SystemClock
 import android.util.Log
 import android.view.View
 import android.widget.Button
-import android.widget.Chronometer
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.eddp.nodontcallme.views.AnimatedHowToUse
@@ -116,10 +114,10 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         //stopService(mServiceIntent);
 
-        val broadcastIntent = Intent()
-        broadcastIntent.action = "restartservice"
-        broadcastIntent.setClass(this, Restarter::class.java)
-        this.sendBroadcast(broadcastIntent)
+        //val broadcastIntent = Intent()
+        //broadcastIntent.action = "restartservice"
+        //broadcastIntent.setClass(this, Restarter::class.java)
+        //this.sendBroadcast(broadcastIntent)
 
         super.onDestroy()
     }
@@ -147,14 +145,9 @@ class MainActivity : AppCompatActivity() {
 
     inner class CallBlockerDataReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            //val str = intent?.getExtras()?.get("Extra data name").toString() as String
 
             when (intent?.action) {
                 DATA_RECEIVER_ACTION_CHRONOMETER_DATA -> {
-                    //val chronometerStartTime: Long = intent.extras?.get("start_time") as Long
-                    //Log.d("PROUT", chronometerStartTime.toString())
-                    //MainActivity  .showChronometer(callBlockerService!!.getStartTime())
-
                     val chronometerStartTime: Long = getChronometerStartTime() ?: return
 
                     showChronometer(chronometerStartTime)

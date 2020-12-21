@@ -40,12 +40,6 @@
             </intent-filter>
         </receiver>-->
 
-        <!--<receiver android:name=".MainActivity$CallBlockerDataReceiver" android:enabled="true" android:exported="true">
-            <intent-filter>
-                <action android:name="CHRONOMETER_DATA"/>
-            </intent-filter>
-        </receiver>-->
-
         <service android:name=".CallBlockerService" android:enabled="true"/>
     </application>
 

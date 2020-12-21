@@ -12,7 +12,6 @@ import android.graphics.Color
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
-import androidx.preference.PreferenceManager
 import android.telecom.TelecomManager
 import android.telephony.TelephonyManager
 import android.util.Log
@@ -28,7 +27,7 @@ import java.util.*
 *
 * Made with help of:
 * https://stackoverflow.com/questions/30525784/android-keep-service-running-when-app-is-killed
-* */
+ ******************************************/
 
 class CallBlockerService : Service() {
     private val _binder: IBinder = ServiceBinder()
@@ -37,11 +36,8 @@ class CallBlockerService : Service() {
 
     private var startTime: Long? = null
 
-    //private var startTime: Int = 0
-    //private var timer: Timer? = null
-    //private var timerTask: TimerTask? = null
-
     // Getters
+    // TODO("Move MainActivity.CallBlockerDataReceiver.getChronometerStartTime() here?")
     fun getStartTime() : Long { return this.startTime ?: -1 }
 
     // On create
@@ -109,7 +105,6 @@ class CallBlockerService : Service() {
 
     private fun saveStartTime() {
         val sharedPref = getSharedPreferences(getString(R.string.shared_pref_filename), MODE_PRIVATE) ?: return
-        //val sharedPref = PreferenceManager.getDefaultSharedPreferences(this) ?: return
 
         with(sharedPref.edit()) {
             startTime?.let { putLong("start_time", it) }
@@ -118,7 +113,6 @@ class CallBlockerService : Service() {
 
         // Send signal
         val chronometerBroadcast = Intent(MainActivity.DATA_RECEIVER_ACTION_CHRONOMETER_DATA)
-        //chronometerBroadcast.putExtra("start_time", startTime!!)
         this.sendBroadcast(chronometerBroadcast)
     }
 
