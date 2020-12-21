@@ -1,37 +1,30 @@
 package com.eddp.nodontcallme
 
 import android.Manifest
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
 import android.app.ActivityManager
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.Log
 import android.view.View
-import android.view.animation.AccelerateInterpolator
-import android.view.animation.Animation
-import android.view.animation.AnimationUtils
-import android.view.animation.TranslateAnimation
 import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.RelativeLayout
+import android.widget.Chronometer
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.eddp.nodontcallme.views.AnimatedHowToUse
+import com.eddp.nodontcallme.views.CustomChronometer
+
 
 class MainActivity : AppCompatActivity() {
     private var serviceIntent: Intent? = null
     private var callBlockerService: CallBlockerService? = null
+    private var callBlockerDataReceiver: CallBlockerDataReceiver? = null
 
     private lateinit var howToUse: AnimatedHowToUse
     private lateinit var startBlockerBtn: Button
-
-    //private var shortAnimationDuration: Int = 0
-    //private lateinit var howToUseAnimShow: TranslateAnimation
-    //private lateinit var howToUseAnimHide: TranslateAnimation
+    private lateinit var chronometer: CustomChronometer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,9 +47,14 @@ class MainActivity : AppCompatActivity() {
         howToUse = findViewById(R.id.how_to_use)
         howToUse.setView(howToUse)
         startBlockerBtn = findViewById(R.id.btn_start_blocker)
+        chronometer = findViewById(R.id.chronometer)
 
         // Get service
         callBlockerService = CallBlockerService()
+        callBlockerDataReceiver = CallBlockerDataReceiver()
+        val intentFilter = IntentFilter(DATA_RECEIVER_ACTION_CHRONOMETER_DATA)
+
+        registerReceiver(callBlockerDataReceiver, intentFilter)
 
         if (callBlockerService != null) {
             serviceIntent = Intent(this, callBlockerService!!::class.java)
@@ -64,27 +62,28 @@ class MainActivity : AppCompatActivity() {
             if (isServiceRunning(callBlockerService!!::class.java)) {
                 startBlockerBtn.text = CallBlockerBtnListener().enabledText
                 howToUse.toggle(false)
+                showChronometer(callBlockerDataReceiver?.getChronometerStartTime() ?: 0)
             } else {
                 startBlockerBtn.text = CallBlockerBtnListener().disabledText
                 howToUse.toggle(true)
+                hideChronometer()
             }
 
             startBlockerBtn.setOnClickListener(CallBlockerBtnListener())
         }
+    }
 
-        // Init anims
-        //shortAnimationDuration = resources.getInteger(android.R.integer.config_shortAnimTime)
-        //howToUseAnimShow = TranslateAnimation(0f, 0f, 0f, -howToUse.height.toFloat())
-        //howToUseAnimHide = TranslateAnimation(0f, 0f, -howToUse.height.toFloat(), 0f)
-//
-        //howToUseAnimShow.duration = shortAnimationDuration.toLong()
-        //howToUseAnimHide.duration = shortAnimationDuration.toLong()
-//
-        //howToUseAnimShow.interpolator = AccelerateInterpolator()
-        //howToUseAnimHide.interpolator = AccelerateInterpolator()
-//
-        //howToUseAnimShow.setAnimationListener(HowToUseAnimListener(true))
-        //howToUseAnimHide.setAnimationListener(HowToUseAnimListener(false))
+    fun showChronometer(time: Long) {
+        chronometer.setStartTime(time)
+        chronometer.start()
+
+        chronometer.animate().alpha(1f).setDuration(200)
+    }
+
+    fun hideChronometer() {
+        chronometer.stop()
+
+        chronometer.animate().alpha(0f).setDuration(200)
     }
 
     // TODO("See https://stackoverflow.com/questions/45817813/alternate-of-activitymanager-getrunningservicesint-after-oreo")
@@ -125,34 +124,6 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    //private fun startBlocker() {
-    //    howToUse.animate()
-    //            .alpha(0f)
-    //            .y(-500f)
-    //            .setDuration(shortAnimationDuration.toLong())
-    //            .setListener(object: AnimatorListenerAdapter() {
-    //                override fun onAnimationEnd(animation: Animator?) {
-    //                    howToUse.visibility = View.GONE
-    //                }
-    //            })
-//
-    //    //startBlockerBtn.setText(sBBTextOn)
-    //}
-
-    //private fun endBlocker() {
-    //    howToUse.animate()
-    //            .alpha(1f)
-    //            .y(0f)
-    //            .setDuration(shortAnimationDuration.toLong())
-    //            .setListener(object: AnimatorListenerAdapter() {
-    //                override fun onAnimationStart(animation: Animator?) {
-    //                    howToUse.visibility = View.VISIBLE
-    //                }
-    //            })
-//
-    //    //startBlockerBtn.setText(sBBTextOff)
-    //}
-
     inner class CallBlockerBtnListener : View.OnClickListener {
         val disabledText: String = getString(R.string.btn_blocker_stopped)
         val enabledText: String = getString(R.string.btn_blocker_started)
@@ -165,6 +136,7 @@ class MainActivity : AppCompatActivity() {
                 stopService(serviceIntent)
                 startBlockerBtn.text = disabledText
                 howToUse.toggle(true)
+                hideChronometer()
             } else {
                 startService(serviceIntent)
                 startBlockerBtn.text = enabledText
@@ -173,22 +145,32 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    //inner class HowToUseAnimListener(show: Boolean) : Animation.AnimationListener {
-    //    private val showView: Boolean = show
-//
-    //    override fun onAnimationStart(animation: Animation?) {
-    //        if (showView) {
-//
-    //        }
-    //    }
-//
-    //    override fun onAnimationEnd(animation: Animation?) { }
-//
-    //    override fun onAnimationRepeat(animation: Animation?) { }
-//
-    //}
+    inner class CallBlockerDataReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            //val str = intent?.getExtras()?.get("Extra data name").toString() as String
+
+            when (intent?.action) {
+                DATA_RECEIVER_ACTION_CHRONOMETER_DATA -> {
+                    //val chronometerStartTime: Long = intent.extras?.get("start_time") as Long
+                    //Log.d("PROUT", chronometerStartTime.toString())
+                    //MainActivity  .showChronometer(callBlockerService!!.getStartTime())
+
+                    val chronometerStartTime: Long = getChronometerStartTime() ?: return
+
+                    showChronometer(chronometerStartTime)
+                }
+            }
+        }
+
+        fun getChronometerStartTime() : Long? {
+            val sharedPrefs: SharedPreferences? = this@MainActivity.getSharedPreferences(getString(R.string.shared_pref_filename), MODE_PRIVATE)
+            return sharedPrefs?.getLong("start_time", 0)
+        }
+    }
 
     companion object {
         const val PERMISSION_REQUEST_READ_PHONE_STATE = 0
+
+        const val DATA_RECEIVER_ACTION_CHRONOMETER_DATA = "CHRONOMETER_DATA"
     }
 }

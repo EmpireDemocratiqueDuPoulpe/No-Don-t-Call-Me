@@ -12,6 +12,7 @@ import android.graphics.Color
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import androidx.preference.PreferenceManager
 import android.telecom.TelecomManager
 import android.telephony.TelephonyManager
 import android.util.Log
@@ -34,9 +35,14 @@ class CallBlockerService : Service() {
 
     private var broadcastReceiver: BroadcastReceiver? = null
 
+    private var startTime: Long? = null
+
     //private var startTime: Int = 0
     //private var timer: Timer? = null
     //private var timerTask: TimerTask? = null
+
+    // Getters
+    fun getStartTime() : Long { return this.startTime ?: -1 }
 
     // On create
     override fun onCreate() {
@@ -46,6 +52,7 @@ class CallBlockerService : Service() {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
             startOwnForeground()
         } else {
+            startTime = System.currentTimeMillis()
             startForeground(1, Notification())
         }
 
@@ -76,10 +83,14 @@ class CallBlockerService : Service() {
         )
 
         // Notification
+        startTime = System.currentTimeMillis()
+        saveStartTime()
+
         val notif: Notification = notifBuilder
                 .setOngoing(true)
                 .setSmallIcon(R.drawable.ic_launcher_background)
                 .setContentTitle("Call Blocker is active")
+                .setWhen(startTime!!)
                 .setUsesChronometer(true)
                 .setPriority(NotificationManager.IMPORTANCE_LOW)
                 .setCategory(Notification.CATEGORY_SERVICE)
@@ -96,22 +107,26 @@ class CallBlockerService : Service() {
         registerReceiver(broadcastReceiver, intentFilter)
     }
 
-    //private fun startTimer() {
-    //    timer = Timer()
-    //    timerTask = object : TimerTask() {
-    //        override fun run() {
-    //            Log.i("Count", "=========  " + counter++)
-    //        }
-    //    }
-//
-    //    timer?.schedule(timerTask, 1000, 1000)
-    //}
+    private fun saveStartTime() {
+        val sharedPref = getSharedPreferences(getString(R.string.shared_pref_filename), MODE_PRIVATE) ?: return
+        //val sharedPref = PreferenceManager.getDefaultSharedPreferences(this) ?: return
+
+        with(sharedPref.edit()) {
+            startTime?.let { putLong("start_time", it) }
+            commit()
+        }
+
+        // Send signal
+        val chronometerBroadcast = Intent(MainActivity.DATA_RECEIVER_ACTION_CHRONOMETER_DATA)
+        //chronometerBroadcast.putExtra("start_time", startTime!!)
+        this.sendBroadcast(chronometerBroadcast)
+    }
 
     // On start command / On bind
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         startCallBlocker()
-        //startTimer()
+
         return START_STICKY
     }
 
@@ -126,9 +141,10 @@ class CallBlockerService : Service() {
     }
 
     // On destroy
+    // TODO("Leaked broadcast receiver error each time the service is stopped")
     override fun onDestroy() {
-        super.onDestroy()
         stopCallBlocker()
+        super.onDestroy()
 
         //val restartBroadcast = Intent()
         //restartBroadcast.action = "restartservice"
@@ -141,6 +157,7 @@ class CallBlockerService : Service() {
         if (broadcastReceiver != null) {
             unregisterReceiver(broadcastReceiver)
             broadcastReceiver = null
+            startTime = null
         }
     }
 
