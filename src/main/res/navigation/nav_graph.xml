@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/callBlockerFragment">
+
+    <fragment
+        android:id="@+id/callBlockerFragment"
+        android:name="com.eddp.nodontcallme.CallBlockerFragment"
+        android:label="fragment_call_blocker"
+        tools:layout="@layout/fragment_call_blocker" >
+        <action
+            android:id="@+id/action_callBlockerFragment_to_historyFragment"
+            app:destination="@id/historyFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/historyFragment"
+        android:name="com.eddp.nodontcallme.HistoryFragment"
+        android:label="fragment_history"
+        tools:layout="@layout/fragment_history" />
+</navigation>
