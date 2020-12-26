@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/menu_page_1"
+        android:id="@+id/menu_page_call_blocker"
         android:enabled="true"
         android:icon="@drawable/ic_phone_locked_24px"
         android:title="@string/bottom_nav_bar_call_blocker"/>
 
     <item
-        android:id="@+id/menu_page_2"
+        android:id="@+id/menu_page_history"
         android:enabled="true"
         android:icon="@drawable/ic_history_24px"
         android:title="@string/bottom_nav_bar_blocked_history"/>
 
     <item
-        android:id="@+id/menu_page_3"
+        android:id="@+id/menu_page_settings"
         android:enabled="true"
         android:icon="@drawable/ic_settings_24px"
         android:title="@string/bottom_nav_bar_settings"/>

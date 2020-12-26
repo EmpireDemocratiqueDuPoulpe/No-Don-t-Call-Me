@@ -1,0 +1,38 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="@string/calls_header">
+        <SwitchPreferenceCompat
+            android:key="enable_emergency_calls"
+            android:title="@string/enable_emergency_calls_title"
+            android:summary="@string/enable_emergency_calls_summary"
+            android:defaultValue="true"/>
+
+        <EditTextPreference
+            android:dependency="enable_emergency_calls"
+            android:key="emergency_calls"
+            android:title="@string/emergency_calls_title"
+            app:useSimpleSummaryProvider="true"
+            android:inputType="phone"
+            android:defaultValue="1"
+            android:maxLines="1"
+            android:singleLine="true"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/message_header">
+        <SwitchPreferenceCompat
+            android:key="enable_auto_message"
+            android:title="@string/enable_auto_message_title"
+            android:summary="@string/enable_auto_message_summary"/>
+
+        <EditTextPreference
+            android:dependency="enable_auto_message"
+            android:key="auto_message"
+            android:title="@string/auto_message_title"
+            app:useSimpleSummaryProvider="true"
+            android:defaultValue="@string/auto_message_default_value"/>
+    </PreferenceCategory>
+
+    <!-- TODO("Add option to bypass blocker for some contacts") -->
+
+</PreferenceScreen>

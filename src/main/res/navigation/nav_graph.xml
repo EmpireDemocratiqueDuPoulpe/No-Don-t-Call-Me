@@ -13,10 +13,31 @@
         <action
             android:id="@+id/action_callBlockerFragment_to_historyFragment"
             app:destination="@id/historyFragment" />
+        <action
+            android:id="@+id/action_callBlockerFragment_to_settingsFragment"
+            app:destination="@id/settingsFragment" />
     </fragment>
     <fragment
         android:id="@+id/historyFragment"
         android:name="com.eddp.nodontcallme.HistoryFragment"
         android:label="fragment_history"
-        tools:layout="@layout/fragment_history" />
+        tools:layout="@layout/fragment_history" >
+        <action
+            android:id="@+id/action_historyFragment_to_settingsFragment"
+            app:destination="@id/settingsFragment" />
+        <action
+            android:id="@+id/action_historyFragment_to_callBlockerFragment"
+            app:destination="@id/callBlockerFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.eddp.nodontcallme.SettingsFragment"
+        android:label="SettingsFragment" >
+        <action
+            android:id="@+id/action_settingsFragment_to_historyFragment"
+            app:destination="@id/historyFragment" />
+        <action
+            android:id="@+id/action_settingsFragment_to_callBlockerFragment"
+            app:destination="@id/callBlockerFragment" />
+    </fragment>
 </navigation>

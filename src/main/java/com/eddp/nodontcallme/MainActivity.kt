@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Debug
 import android.util.Log
+import android.view.MenuItem
 import android.view.View
 import android.widget.Button
 import android.widget.Toast
@@ -16,12 +17,17 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import com.eddp.nodontcallme.views.AnimatedHowToUse
 import com.eddp.nodontcallme.views.CustomChronometer
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 
 class MainActivity : AppCompatActivity() {
     private var serviceIntent: Intent? = null
     private var callBlockerService: CallBlockerService? = null
     private var callBlockerDataReceiver: CallBlockerDataReceiver? = null
+
+    private lateinit var bottomNavBar: BottomNavigationView
+    private val bottomNavBarItems: MutableList<MenuItem> = ArrayList()
+    private var previousSelectedMenu: Int = 0
 
     private lateinit var fragmentManager: FragmentManager
 
@@ -60,6 +66,14 @@ class MainActivity : AppCompatActivity() {
             .commit()
 
         // Get elements
+        bottomNavBar = findViewById(R.id.bottom_nav_bar)
+        val menu = bottomNavBar.menu
+
+        for (i in 0 until menu.size()) {
+            bottomNavBarItems.add(menu.getItem(i))
+        }
+
+        bottomNavBar.setOnNavigationItemSelectedListener(BottomNavBarListener())
         //howToUse = findViewById(R.id.how_to_use)
         //howToUse.setView(howToUse)
         //startBlockerBtn = findViewById(R.id.btn_start_blocker)
@@ -183,10 +197,69 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    inner class BottomNavBarListener : BottomNavigationView.OnNavigationItemSelectedListener {
+        override fun onNavigationItemSelected(item: MenuItem): Boolean {
+            // Get current item pos
+            val itemPos = bottomNavBarItems.indexOf(item)
+            if (previousSelectedMenu == itemPos) return false
+
+            // Init transaction vars
+            var fragment: Fragment
+            var fragmentTag: String
+            var enterAnim: Int
+            var exitAnim: Int
+
+            when (item.itemId) {
+                R.id.menu_page_call_blocker -> {
+                    fragment = CallBlockerFragment()
+                    fragmentTag = FRAGMENT_CALL_BLOCKER
+                }
+                R.id.menu_page_history -> {
+                    fragment = HistoryFragment()
+                    fragmentTag = FRAGMENT_HISTORY
+                }
+                R.id.menu_page_settings -> {
+                    fragment = SettingsFragment()
+                    fragmentTag = FRAGMENT_SETTINGS
+                }
+                else -> {
+                    return false
+                }
+            }
+
+            if (previousSelectedMenu > itemPos) {
+                enterAnim = R.anim.slide_in_left
+                exitAnim = R.anim.slide_out_right
+            } else {
+                enterAnim = R.anim.slide_in_right
+                exitAnim = R.anim.slide_out_left
+            }
+
+            // Begin transaction
+            fragmentManager
+                    .beginTransaction()
+                    .setCustomAnimations(
+                            enterAnim,
+                            exitAnim,
+                            enterAnim,
+                            exitAnim)
+                    .replace(R.id.nav_host_fragment, fragment, fragmentTag)
+                    .addToBackStack(null)
+                    .commit()
+
+            // Update previous selected item
+            previousSelectedMenu = itemPos
+
+            return true
+        }
+    }
+
     companion object {
         const val PERMISSION_REQUEST_READ_PHONE_STATE = 0
 
         const val FRAGMENT_CALL_BLOCKER = "CALL_BLOCKER_FRAGMENT"
+        const val FRAGMENT_HISTORY = "HISTORY_FRAGMENT"
+        const val FRAGMENT_SETTINGS = "SETTING_FRAGMENT"
 
         const val DATA_RECEIVER_ACTION_CHRONOMETER_DATA = "CHRONOMETER_DATA"
     }

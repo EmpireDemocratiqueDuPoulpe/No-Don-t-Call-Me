@@ -1,4 +1,5 @@
 <resources>
+    <!-- Call blocker fragment -->
     <string name="app_name">No Don\'t Call Me</string>
     <string name="how_to_use_title">How do I use it?</string>
     <string name="how_to_use_desc">Just press the big button. Yeah it\'s this easy. The Call Blocker will begin its hard work to reject every incoming call. Don\'t worry about emergency. If someone call you twice, the next calls from him aren\'t blocked anymore.</string>
@@ -6,12 +7,26 @@
     <string name="btn_blocker_stopped">Start call blocker</string>
 
 
+    <!-- Settings fragment -->
+    <string name="calls_header">Calls</string>
+    <string name="message_header">Auto-Message</string>
+
+    <string name="enable_emergency_calls_title">Enable emergency calls</string>
+    <string name="enable_emergency_calls_summary">Allow calls from a specific contact if the limit is exceeded</string>
+    <string name="emergency_calls_title">Allow emergency calls after</string>
+
+    <string name="enable_auto_message_title">Enable auto message</string>
+    <string name="enable_auto_message_summary">Send a message to the contact when the call is rejected</string>
+    <string name="auto_message_title">Message</string>
+    <string name="auto_message_default_value">[Automatic Message]\nI can\'t pick up the phone right now. Please call back if it\'s urgent or I\'ll contact you later.</string>
+
+
+    <!-- Bottom nav bar -->
     <string name="bottom_nav_bar_call_blocker">Call blocker</string>
     <string name="bottom_nav_bar_blocked_history">Blocked calls</string>
     <string name="bottom_nav_bar_settings">Settings</string>
 
 
+    <!-- Shared prefs -->
     <string name="shared_pref_filename">no_dont_call_me_shared_prefs</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
