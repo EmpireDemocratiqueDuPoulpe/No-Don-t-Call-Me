@@ -13,7 +13,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     //private var autoMessageEnable: SwitchPreferenceCompat? = null
     //private var autoMessage: EditTextPreference? = null
 
-    // TODO: Preference are unused for now. 
+    // TODO: Preference are unused for now.
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         preferenceManager.sharedPreferencesName = getString(R.string.shared_pref_filename)
         setPreferencesFromResource(R.xml.root_preferences, rootKey)
