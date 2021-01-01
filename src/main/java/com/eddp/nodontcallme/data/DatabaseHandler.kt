@@ -4,8 +4,12 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.database.DatabaseErrorHandler
+import android.database.SQLException
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.util.Log
+import com.eddp.nodontcallme.interfaces.DbObserver
+import com.eddp.nodontcallme.interfaces.ObservableDb
 import java.lang.Exception
 
 //class DatabaseHandler(
@@ -13,9 +17,8 @@ import java.lang.Exception
 //    factory: SQLiteDatabase.CursorFactory?,
 //    errorHandler: DatabaseErrorHandler?
 //) : SQLiteOpenHelper(context, DATABASE_NAME, factory, DATABASE_VERSION, errorHandler) {
-class DatabaseHandler private constructor(
-    context: Context
-) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+class DatabaseHandler private constructor(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION), ObservableDb {
+    private var ctx: Context? = context
 
     override fun onCreate(db: SQLiteDatabase?) {
         db?.execSQL(CREATE_MISSED_CALLS_TABLE)
@@ -29,15 +32,19 @@ class DatabaseHandler private constructor(
     }
 
     // Functions for operations on database
-    fun addMissedCall(missedCall: MissedCall) {
+    fun addMissedCall(missedCall: MissedCall.CallItem) {
         val db: SQLiteDatabase = writableDatabase
-        db.beginTransaction()
+
+        Log.d("DB", "Add ${missedCall.phoneNumber} ?")
 
         // Update if the record already exist
         if (getMissedCall(missedCall.phoneNumber) != null) {
             return updateMissedCall(missedCall)
         }
 
+        Log.d("DB", "Adding ${missedCall.phoneNumber}")
+
+        db.beginTransaction()
         try {
             val data = ContentValues()
             data.put(KEY_MISSED_CALLS_PHONE_NUMBER, missedCall.phoneNumber)
@@ -45,16 +52,18 @@ class DatabaseHandler private constructor(
 
             db.insertOrThrow(TABLE_MISSED_CALLS, null, data)
             db.setTransactionSuccessful()
+            Log.d("DB", "Added ${missedCall.phoneNumber}")
         } catch (err: Exception) {
-            // CATCH
+            Log.e("DB", "Exception: ${err.message}", err)
         } finally {
             db.endTransaction()
+            notifyChange()
         }
     }
 
-    fun getMissedCalls() : MutableList<MissedCall> {
+    fun getMissedCalls() : MutableList<MissedCall.CallItem> {
         val db: SQLiteDatabase = readableDatabase
-        val missedCalls: MutableList<MissedCall> = ArrayList()
+        val missedCalls: MutableList<MissedCall.CallItem> = ArrayList()
 
         val MISSED_CALLS_SELECT_QUERY: String =
             "SELECT $KEY_MISSED_CALLS_ID, $KEY_MISSED_CALLS_PHONE_NUMBER, $KEY_MISSED_CALLS_COUNT " +
@@ -67,7 +76,7 @@ class DatabaseHandler private constructor(
             if (cursor.moveToFirst()) {
                 do {
                     missedCalls.add(
-                        MissedCall(
+                        MissedCall.CallItem(
                             cursor.getInt(cursor.getColumnIndex(KEY_MISSED_CALLS_ID)), // Id
                             cursor.getString(cursor.getColumnIndex(KEY_MISSED_CALLS_PHONE_NUMBER)), // Phone number
                             cursor.getInt(cursor.getColumnIndex(KEY_MISSED_CALLS_COUNT)) // Calls count
@@ -76,7 +85,7 @@ class DatabaseHandler private constructor(
                 } while (cursor.moveToNext())
             }
         } catch (err: Exception) {
-            // CATCH
+            Log.e("DB", "Exception: ${err.message}", err)
         } finally {
             cursor.close()
         }
@@ -84,9 +93,9 @@ class DatabaseHandler private constructor(
         return missedCalls
     }
 
-    fun getMissedCall(phoneNumber: String) : MissedCall? {
+    fun getMissedCall(phoneNumber: String) : MissedCall.CallItem? {
         val db: SQLiteDatabase = readableDatabase
-        var missedCall: MissedCall? = null
+        var missedCall: MissedCall.CallItem? = null
 
         val MISSED_CALL_SELECT_QUERY: String =
             "SELECT $KEY_MISSED_CALLS_ID, $KEY_MISSED_CALLS_PHONE_NUMBER, $KEY_MISSED_CALLS_COUNT " +
@@ -98,14 +107,14 @@ class DatabaseHandler private constructor(
         // Exec the query
         try {
             if (cursor.moveToFirst()) {
-                missedCall = MissedCall(
+                missedCall = MissedCall.CallItem(
                     cursor.getInt(cursor.getColumnIndex(KEY_MISSED_CALLS_ID)), // Id
                     cursor.getString(cursor.getColumnIndex(KEY_MISSED_CALLS_PHONE_NUMBER)), // Phone number
                     cursor.getInt(cursor.getColumnIndex(KEY_MISSED_CALLS_COUNT)) // Calls count
                 )
             }
         } catch (err: Exception) {
-            // CATCH
+            Log.e("DB", "Exception: ${err.message}", err)
         } finally {
             cursor.close()
         }
@@ -113,16 +122,23 @@ class DatabaseHandler private constructor(
         return missedCall
     }
 
-    fun updateMissedCall(missedCall: MissedCall) {
-        val db: SQLiteDatabase = writableDatabase
+    fun updateMissedCall(missedCall: MissedCall.CallItem) {
+        val currentRow: MissedCall.CallItem? = this.getMissedCall(missedCall.phoneNumber)
+        Log.d("DB", "Trying to update $currentRow")
 
-        val data = ContentValues()
-        data.put(KEY_MISSED_CALLS_COUNT, missedCall.callsCount)
+        if (currentRow != null) {
+            Log.d("DB", "Updating ${missedCall.phoneNumber} from #calls_count = ${currentRow.callsCount}# to #calls_count = ${currentRow.callsCount + 1}#")
+            val db: SQLiteDatabase = writableDatabase
 
-        val WHERE_ARGS: Array<String> = arrayOf(missedCall.missedCallId.toString())
-        val WHERE_CLAUSE = "$KEY_MISSED_CALLS_ID = ${missedCall.missedCallId}"
+            val data = ContentValues()
+            data.put(KEY_MISSED_CALLS_COUNT, currentRow.callsCount + 1)
 
-        db.update(TABLE_MISSED_CALLS, data, WHERE_CLAUSE, WHERE_ARGS)
+            val WHERE_ARGS: Array<String> = arrayOf(currentRow.missedCallId.toString())
+            val WHERE_CLAUSE = "$KEY_MISSED_CALLS_ID = ?"
+
+            db.update(TABLE_MISSED_CALLS, data, WHERE_CLAUSE, WHERE_ARGS)
+            notifyChange()
+        }
     }
 
     fun deleteAll() {
@@ -133,9 +149,31 @@ class DatabaseHandler private constructor(
             db.delete(TABLE_MISSED_CALLS, null, null)
             db.setTransactionSuccessful()
         } catch (err: Exception) {
-            // CATCH
+            Log.e("DB", "Exception: ${err.message}", err)
         } finally {
             db.endTransaction()
+            notifyChange()
+        }
+    }
+
+    // Observers
+    private val dbObserverList: MutableList<DbObserver?> = ArrayList()
+
+    override fun notifyChange() {
+        for (dbObserver in this.dbObserverList) {
+            dbObserver?.onDatabaseChanged()
+        }
+    }
+
+    override fun registerObserver(dbObserver: DbObserver) {
+        if (!this.dbObserverList.contains(dbObserver)) {
+            this.dbObserverList.add(dbObserver)
+        }
+    }
+
+    override fun removeObserver(dbObserver: DbObserver) {
+        if (this.dbObserverList.contains(dbObserver)) {
+            this.dbObserverList.remove(dbObserver)
         }
     }
 
@@ -154,7 +192,7 @@ class DatabaseHandler private constructor(
 
         // Database info
         const val DATABASE_NAME: String = "noDontCallMeDB"
-        const val DATABASE_VERSION: Int = 1
+        const val DATABASE_VERSION: Int = 2
 
         // Tables names
         const val TABLE_MISSED_CALLS: String = "missed_calls"
@@ -168,8 +206,8 @@ class DatabaseHandler private constructor(
         const val CREATE_MISSED_CALLS_TABLE: String =
             "CREATE TABLE $TABLE_MISSED_CALLS" +
                     "(" +
-                        "$KEY_MISSED_CALLS_ID INTEGER PRIMARY KEY," +
-                        "$KEY_MISSED_CALLS_PHONE_NUMBER TEXT" +
+                        "$KEY_MISSED_CALLS_ID INTEGER PRIMARY KEY AUTOINCREMENT," +
+                        "$KEY_MISSED_CALLS_PHONE_NUMBER TEXT," +
                         "$KEY_MISSED_CALLS_COUNT INTEGER" +
                     ")"
     }

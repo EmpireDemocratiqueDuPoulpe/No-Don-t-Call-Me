@@ -13,14 +13,23 @@ import android.view.View
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import com.eddp.nodontcallme.data.DatabaseHandler
+import com.eddp.nodontcallme.data.MissedCall
+import com.eddp.nodontcallme.interfaces.DbObserver
 import com.eddp.nodontcallme.views.AnimatedHowToUse
 import com.eddp.nodontcallme.views.CustomChronometer
+import com.eddp.nodontcallme.views.MissedCallAdapter
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), DbObserver {
+    private var database: DatabaseHandler? = null
+    private var missedCalls: MutableList<MissedCall>? = null
+    private var missedCallAdapter: MissedCallAdapter? = null
+
     private var serviceIntent: Intent? = null
     private var callBlockerService: CallBlockerService? = null
     private var callBlockerDataReceiver: CallBlockerDataReceiver? = null
@@ -36,6 +45,9 @@ class MainActivity : AppCompatActivity() {
     //private lateinit var chronometer: CustomChronometer
 
     // Getters
+    fun getMissedCalls() : MutableList<MissedCall>? { return this.missedCalls }
+    fun getMissedCallsAdapter() : MissedCallAdapter? { return this.missedCallAdapter }
+
     fun getServiceIntent() : Intent? { return this.serviceIntent }
     fun getCallBlockerService() : CallBlockerService? { return this.callBlockerService }
     fun getCallBlockerDataReceiver() : CallBlockerDataReceiver? { return this.callBlockerDataReceiver }
@@ -43,6 +55,24 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        this.database = DatabaseHandler.getInstance(this)
+        this.database?.registerObserver(this)
+        this.missedCalls = this.database?.getMissedCalls() as MutableList<MissedCall>
+        this.missedCallAdapter = MissedCallAdapter(this)
+
+        if (this.missedCalls != null && this.missedCallAdapter != null) {
+            //missedCallAdapter = MissedCallAdapter(missedCalls!!)
+            this.missedCallAdapter!!.setData(this.missedCalls!!)
+
+            Log.d("DATA", "DATA START =====================================")
+            for (missedCall: MissedCall in missedCalls!!) {
+                if (missedCall is MissedCall.CallItem) {
+                    Log.d("DATA", "ID: ${missedCall.missedCallId} | PHONE: ${missedCall.phoneNumber} | COUNT: ${missedCall.callsCount}")
+                }
+            }
+            Log.d("DATA", "DATA END =======================================")
+        }
 
         // Ask for permission (Android 6.0+)
         // TODO("CHECK IF NEEDED")
@@ -182,10 +212,14 @@ class MainActivity : AppCompatActivity() {
                 DATA_RECEIVER_ACTION_CHRONOMETER_DATA -> {
                     val chronometerStartTime: Long = getChronometerStartTime() ?: return
 
-                    val currentFragment: CallBlockerFragment? = fragmentManager.findFragmentByTag(FRAGMENT_CALL_BLOCKER) as CallBlockerFragment
+                    var currentFragment: Fragment? = fragmentManager.findFragmentByTag(FRAGMENT_CALL_BLOCKER)
 
-                    if (currentFragment != null && currentFragment.isVisible) {
-                        currentFragment.showChronometer(chronometerStartTime)
+                    if (currentFragment != null) {
+                        currentFragment = currentFragment as CallBlockerFragment
+
+                        if (currentFragment.isVisible) {
+                            currentFragment.showChronometer(chronometerStartTime)
+                        }
                     }
                 }
             }
@@ -251,6 +285,16 @@ class MainActivity : AppCompatActivity() {
             previousSelectedMenu = itemPos
 
             return true
+        }
+    }
+
+    override fun onDatabaseChanged() {
+        Log.d("PROUT", "Database changed")
+        this.missedCalls = this.database?.getMissedCalls() as MutableList<MissedCall>
+
+        if (missedCalls != null) {
+            this.missedCallAdapter?.setData(this.missedCalls!!)
+            //this.missedCallAdapter?.notifyDataSetChanged()
         }
     }
 

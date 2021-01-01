@@ -18,6 +18,8 @@ import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import com.eddp.nodontcallme.data.DatabaseHandler
+import com.eddp.nodontcallme.data.MissedCall
 import java.lang.reflect.Method
 import java.util.*
 
@@ -32,6 +34,8 @@ import java.util.*
 class CallBlockerService : Service() {
     private val _binder: IBinder = ServiceBinder()
 
+    private var database: DatabaseHandler? = null
+
     private var broadcastReceiver: BroadcastReceiver? = null
 
     private var startTime: Long? = null
@@ -42,7 +46,10 @@ class CallBlockerService : Service() {
 
     // On create
     override fun onCreate() {
+        Log.d("PROUT", "entering \"CallBlockerService.onCreate()\"")
         super.onCreate()
+
+        database = DatabaseHandler.getInstance(this)
 
         // Start service and notification system
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
@@ -96,11 +103,14 @@ class CallBlockerService : Service() {
     }
 
     private fun startCallBlocker() {
+        this.database?.deleteAll()
+
+        Log.d("PROUT", "registering receiver")
         val intentFilter = IntentFilter()
         intentFilter.addAction("android.intent.action.PHONE_STATE")
 
-        broadcastReceiver = CallBlocker()
-        registerReceiver(broadcastReceiver, intentFilter)
+        this.broadcastReceiver = CallBlocker()
+        registerReceiver(this.broadcastReceiver, intentFilter)
     }
 
     private fun saveStartTime() {
@@ -118,8 +128,8 @@ class CallBlockerService : Service() {
 
     // On start command / On bind
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d("PROUT", "entering \"CallBlockerService.onStartCommand()\"")
         super.onStartCommand(intent, flags, startId)
-        startCallBlocker()
 
         return START_STICKY
     }
@@ -148,10 +158,11 @@ class CallBlockerService : Service() {
 
 
     private fun stopCallBlocker() {
-        if (broadcastReceiver != null) {
+        if (this.broadcastReceiver != null) {
+            Log.d("PROUT", "unregistering receiver")
             unregisterReceiver(broadcastReceiver)
-            broadcastReceiver = null
-            startTime = null
+            this.broadcastReceiver = null
+            this.startTime = null
         }
     }
 
@@ -163,6 +174,7 @@ class CallBlockerService : Service() {
 
     inner class CallBlocker : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
+            Log.d("PROUT", "recieved call")
             // Get call info
             val state: String? = intent?.getStringExtra(TelephonyManager.EXTRA_STATE)
             val number: String? = intent?.extras?.getString(TelephonyManager.EXTRA_INCOMING_NUMBER)
@@ -198,7 +210,14 @@ class CallBlockerService : Service() {
             endCallMethod.isAccessible = true
             endCallMethod.invoke(tm)
 
-            Toast.makeText(context, "Ending the call from $number", Toast.LENGTH_SHORT).show()
+            if (number != null) {
+                Log.d("PROUT", "number: $number")
+                database?.addMissedCall(
+                        MissedCall.CallItem(1, number, 1)
+                )
+
+                Toast.makeText(context, "Ending the call from $number", Toast.LENGTH_SHORT).show()
+            }
         }
 
         private fun blockCallAndroid4Plus(context: Context?, number: String?) {
@@ -221,7 +240,14 @@ class CallBlockerService : Service() {
                 endCallMethod.isAccessible = true
                 endCallMethod.invoke(telephonyService)
 
-                Toast.makeText(context, "Ending the call from $number", Toast.LENGTH_SHORT).show()
+                if (number != null) {
+                    Log.d("PROUT", "number: $number")
+                    database?.addMissedCall(
+                            MissedCall.CallItem(1, number, 1)
+                    )
+
+                    Toast.makeText(context, "Ending the call from $number", Toast.LENGTH_SHORT).show()
+                }
 
             } catch (e: Exception) {
                 e.printStackTrace()

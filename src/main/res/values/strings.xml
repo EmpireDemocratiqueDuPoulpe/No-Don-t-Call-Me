@@ -7,6 +7,13 @@
     <string name="btn_blocker_stopped">Start call blocker</string>
 
 
+    <!-- History fragment -->
+    <string name="fragment_title_history">History</string>
+    <string name="recycler_view_history_phone_number">Phone number</string>
+    <string name="recycler_view_history_calls_count">Number of calls</string>
+    <string name="recycler_view_history_icon_alt">Reject call icon</string>
+
+
     <!-- Settings fragment -->
     <string name="calls_header">Calls</string>
     <string name="message_header">Auto-Message</string>

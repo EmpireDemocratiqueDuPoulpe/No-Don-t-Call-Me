@@ -57,7 +57,7 @@
         android:layout_marginTop="20dp"
         android:paddingHorizontal="20dp"
         android:paddingVertical="10dp"
-        android:background="@color/light_white"
+        android:background="@color/darker_white"
         android:textSize="15sp"
         android:alpha="0"/>
 
