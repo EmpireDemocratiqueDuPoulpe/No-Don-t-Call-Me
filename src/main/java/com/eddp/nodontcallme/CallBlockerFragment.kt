@@ -10,68 +10,57 @@ import com.eddp.nodontcallme.views.AnimatedHowToUse
 import com.eddp.nodontcallme.views.CustomChronometer
 
 class CallBlockerFragment : Fragment() {
-
     private var _activity: MainActivity? = null
 
-    private lateinit var howToUse: AnimatedHowToUse
-    private lateinit var startBlockerBtn: Button
-    private lateinit var chronometer: CustomChronometer
+    private lateinit var _howToUse: AnimatedHowToUse
+    private lateinit var _startBlockerBtn: Button
+    private lateinit var _chronometer: CustomChronometer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        _activity = activity as MainActivity
+        this._activity = activity as MainActivity
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         // Inflate the layout for this fragment
         val v: View = inflater.inflate(R.layout.fragment_call_blocker, container, false)
 
         // Get elements
-        howToUse = v.findViewById(R.id.how_to_use)
-        howToUse.setView(howToUse)
-        startBlockerBtn = v.findViewById(R.id.btn_start_blocker)
-        chronometer = v.findViewById(R.id.chronometer)
+        this._howToUse = v.findViewById(R.id.how_to_use)
+        this._howToUse.setView(this._howToUse)
+        this._startBlockerBtn = v.findViewById(R.id.btn_start_blocker)
+        this._chronometer = v.findViewById(R.id.chronometer)
 
         // Update view according to service status
         if (_activity?.isServiceRunning(_activity?.getCallBlockerService()!!::class.java) == true) {
-            startBlockerBtn.text = CallBlockerBtnListener().enabledText
-            howToUse.toggle(false)
+            this._startBlockerBtn.text = CallBlockerBtnListener().enabledText
+            this._howToUse.toggle(false)
             showChronometer(_activity?.getCallBlockerDataReceiver()?.getChronometerStartTime() ?: 0)
         } else {
-            startBlockerBtn.text = CallBlockerBtnListener().disabledText
-            howToUse.toggle(true)
+            this._startBlockerBtn.text = CallBlockerBtnListener().disabledText
+            this._howToUse.toggle(true)
             hideChronometer()
         }
 
-        startBlockerBtn.setOnClickListener(CallBlockerBtnListener())
+        this._startBlockerBtn.setOnClickListener(CallBlockerBtnListener())
 
         return v
     }
 
     fun showChronometer(time: Long) {
-        chronometer.setStartTime(time)
-        chronometer.start()
+        this._chronometer.setStartTime(time)
+        this._chronometer.start()
 
-        chronometer.animate().alpha(1f).setDuration(200)
+        this._chronometer.animate().alpha(1f).duration = 200
     }
 
     fun hideChronometer() {
-        chronometer.stop()
+        this._chronometer.stop()
 
-        chronometer.animate().alpha(0f).setDuration(200)
-    }
-
-    companion object {
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            CallBlockerFragment().apply {
-                arguments = Bundle().apply {
-                    //putString(ARG_PARAM1, param1)
-                }
-            }
+        this._chronometer.animate().alpha(0f).duration = 200
     }
 
     inner class CallBlockerBtnListener : View.OnClickListener {
@@ -84,14 +73,22 @@ class CallBlockerFragment : Fragment() {
 
             if (_activity?.isServiceRunning(_activity?.getCallBlockerService()!!::class.java) == true) {
                 _activity?.stopService(_activity?.getServiceIntent())
-                startBlockerBtn.text = disabledText
-                howToUse.toggle(true)
+                _startBlockerBtn.text = disabledText
+                _howToUse.toggle(true)
                 hideChronometer()
             } else {
                 _activity?.startService(_activity?.getServiceIntent())
-                startBlockerBtn.text = enabledText
-                howToUse.toggle(false)
+                _startBlockerBtn.text = enabledText
+                _howToUse.toggle(false)
             }
         }
+    }
+
+    companion object {
+        //@JvmStatic
+        //fun newInstance(param1: String, param2: String) =
+        //    CallBlockerFragment().apply {
+        //        arguments = Bundle().apply {}
+        //    }
     }
 }

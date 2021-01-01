@@ -17,4 +17,5 @@
         android:enabled="true"
         android:icon="@drawable/ic_settings_24px"
         android:title="@string/bottom_nav_bar_settings"/>
+
 </menu>

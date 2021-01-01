@@ -5,6 +5,7 @@
     <string name="how_to_use_desc">Just press the big button. Yeah it\'s this easy. The Call Blocker will begin its hard work to reject every incoming call. Don\'t worry about emergency. If someone call you twice, the next calls from him aren\'t blocked anymore.</string>
     <string name="btn_blocker_started">End call blocker</string>
     <string name="btn_blocker_stopped">Start call blocker</string>
+    <string name="default_chronometer_text">00:00:00</string>
 
 
     <!-- History fragment -->

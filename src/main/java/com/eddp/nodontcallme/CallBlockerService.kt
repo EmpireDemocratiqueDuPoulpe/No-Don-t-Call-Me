@@ -14,7 +14,6 @@ import android.os.Build
 import android.os.IBinder
 import android.telecom.TelecomManager
 import android.telephony.TelephonyManager
-import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
@@ -22,7 +21,6 @@ import com.eddp.nodontcallme.data.DatabaseHandler
 import com.eddp.nodontcallme.data.MissedCall
 import java.lang.reflect.Method
 import java.util.*
-
 
 /******************************************
 * # Call Blocker service
@@ -34,28 +32,27 @@ import java.util.*
 class CallBlockerService : Service() {
     private val _binder: IBinder = ServiceBinder()
 
-    private var database: DatabaseHandler? = null
+    private var _database: DatabaseHandler? = null
 
-    private var broadcastReceiver: BroadcastReceiver? = null
+    private var _broadcastReceiver: BroadcastReceiver? = null
 
-    private var startTime: Long? = null
+    private var _startTime: Long? = null
 
     // Getters
     // TODO("Move MainActivity.CallBlockerDataReceiver.getChronometerStartTime() here?")
-    fun getStartTime() : Long { return this.startTime ?: -1 }
+    fun getStartTime() : Long { return this._startTime ?: -1 }
 
     // On create
     override fun onCreate() {
-        Log.d("PROUT", "entering \"CallBlockerService.onCreate()\"")
         super.onCreate()
 
-        database = DatabaseHandler.getInstance(this)
+        this._database = DatabaseHandler.getInstance(this)
 
         // Start service and notification system
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
             startOwnForeground()
         } else {
-            startTime = System.currentTimeMillis()
+            this._startTime = System.currentTimeMillis()
             startForeground(1, Notification())
         }
 
@@ -76,24 +73,24 @@ class CallBlockerService : Service() {
         notifChannel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
 
         // Notification manager
-        val notifManager: NotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notifManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notifManager.createNotificationChannel(notifChannel)
 
         // Notification builder
-        val notifBuilder: NotificationCompat.Builder = NotificationCompat.Builder(
+        val notifBuilder = NotificationCompat.Builder(
                 this,
                 NOTIFICATION_CHANNEL_ID
         )
 
         // Notification
-        startTime = System.currentTimeMillis()
+        this._startTime = System.currentTimeMillis()
         saveStartTime()
 
         val notif: Notification = notifBuilder
                 .setOngoing(true)
                 .setSmallIcon(R.drawable.ic_launcher_background)
                 .setContentTitle("Call Blocker is active")
-                .setWhen(startTime!!)
+                .setWhen(this._startTime!!)
                 .setUsesChronometer(true)
                 .setPriority(NotificationManager.IMPORTANCE_LOW)
                 .setCategory(Notification.CATEGORY_SERVICE)
@@ -102,22 +99,23 @@ class CallBlockerService : Service() {
         startForeground(2, notif)
     }
 
+    // Starting service
     private fun startCallBlocker() {
-        this.database?.deleteAll()
+        this._database?.deleteAll()
 
-        Log.d("PROUT", "registering receiver")
         val intentFilter = IntentFilter()
         intentFilter.addAction("android.intent.action.PHONE_STATE")
 
-        this.broadcastReceiver = CallBlocker()
-        registerReceiver(this.broadcastReceiver, intentFilter)
+        this._broadcastReceiver = CallBlocker()
+        registerReceiver(this._broadcastReceiver, intentFilter)
     }
 
     private fun saveStartTime() {
-        val sharedPref = getSharedPreferences(getString(R.string.shared_pref_filename), MODE_PRIVATE) ?: return
+        val sharedPref = getSharedPreferences(getString(R.string.shared_pref_filename), MODE_PRIVATE)
+                ?: return
 
         with(sharedPref.edit()) {
-            startTime?.let { putLong("start_time", it) }
+            _startTime?.let { putLong("start_time", it) }
             commit()
         }
 
@@ -128,9 +126,7 @@ class CallBlockerService : Service() {
 
     // On start command / On bind
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d("PROUT", "entering \"CallBlockerService.onStartCommand()\"")
         super.onStartCommand(intent, flags, startId)
-
         return START_STICKY
     }
 
@@ -145,7 +141,6 @@ class CallBlockerService : Service() {
     }
 
     // On destroy
-    // TODO("Leaked broadcast receiver error each time the service is stopped")
     override fun onDestroy() {
         stopCallBlocker()
         super.onDestroy()
@@ -156,13 +151,11 @@ class CallBlockerService : Service() {
         //this.sendBroadcast(restartBroadcast)
     }
 
-
     private fun stopCallBlocker() {
-        if (this.broadcastReceiver != null) {
-            Log.d("PROUT", "unregistering receiver")
-            unregisterReceiver(broadcastReceiver)
-            this.broadcastReceiver = null
-            this.startTime = null
+        if (this._broadcastReceiver != null) {
+            unregisterReceiver(_broadcastReceiver)
+            this._broadcastReceiver = null
+            this._startTime = null
         }
     }
 
@@ -171,10 +164,9 @@ class CallBlockerService : Service() {
         const val NOTIFICATION_CHANNEL_NAME: String = "Call Blocker Service"
     }
 
-
+    // Call Blocker Receiver
     inner class CallBlocker : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            Log.d("PROUT", "recieved call")
             // Get call info
             val state: String? = intent?.getStringExtra(TelephonyManager.EXTRA_STATE)
             val number: String? = intent?.extras?.getString(TelephonyManager.EXTRA_INCOMING_NUMBER)
@@ -204,15 +196,14 @@ class CallBlockerService : Service() {
 
         @RequiresApi(Build.VERSION_CODES.P)
         private fun blockCallAndroid9Plus(context: Context?, number: String?) {
-            val tm: TelecomManager = context?.getSystemService(Context.TELECOM_SERVICE) as TelecomManager
+            val tm = context?.getSystemService(Context.TELECOM_SERVICE) as TelecomManager
             val endCallMethod: Method = tm::class.java.getDeclaredMethod("endCall")
 
             endCallMethod.isAccessible = true
             endCallMethod.invoke(tm)
 
             if (number != null) {
-                Log.d("PROUT", "number: $number")
-                database?.addMissedCall(
+                _database?.addMissedCall(
                         MissedCall.CallItem(1, number, 1)
                 )
 
@@ -222,7 +213,7 @@ class CallBlockerService : Service() {
 
         private fun blockCallAndroid4Plus(context: Context?, number: String?) {
             val telephonyService: Any
-            val tm: TelephonyManager = context?.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            val tm = context?.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
 
             // Try to end the call
             try {
@@ -241,16 +232,15 @@ class CallBlockerService : Service() {
                 endCallMethod.invoke(telephonyService)
 
                 if (number != null) {
-                    Log.d("PROUT", "number: $number")
-                    database?.addMissedCall(
+                    _database?.addMissedCall(
                             MissedCall.CallItem(1, number, 1)
                     )
 
                     Toast.makeText(context, "Ending the call from $number", Toast.LENGTH_SHORT).show()
                 }
 
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } catch (err: Exception) {
+                err.printStackTrace()
             }
         }
     }

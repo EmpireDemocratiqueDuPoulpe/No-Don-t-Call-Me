@@ -6,33 +6,21 @@ import androidx.preference.EditTextPreference
 import androidx.preference.PreferenceFragmentCompat
 
 class SettingsFragment : PreferenceFragmentCompat() {
-    //private var preference: SharedPreferences? = null
-
-    //private var emergencyCallEnabler: SwitchPreferenceCompat? = null
-    private var emergencyCallLimit: EditTextPreference? = null
-    //private var autoMessageEnable: SwitchPreferenceCompat? = null
-    //private var autoMessage: EditTextPreference? = null
+    private var _emergencyCallLimit: EditTextPreference? = null
 
     // TODO: Preference are unused for now.
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         preferenceManager.sharedPreferencesName = getString(R.string.shared_pref_filename)
         setPreferencesFromResource(R.xml.root_preferences, rootKey)
 
-        //preference = preferenceManager.sharedPreferences
-
         // Get and init preferences
-        //emergencyCallEnabler = preferenceManager.findPreference("enable_emergency_calls")
-        emergencyCallLimit = preferenceManager.findPreference("emergency_calls")
-        //autoMessageEnable = preferenceManager.findPreference("enable_auto_message")
-        //autoMessage = preferenceManager.findPreference("auto_message")
+        this._emergencyCallLimit = preferenceManager.findPreference("emergency_calls")
 
-        if (emergencyCallLimit != null) {
-            emergencyCallLimit!!.setOnBindEditTextListener { editText ->
+        if (this._emergencyCallLimit != null) {
+            this._emergencyCallLimit!!.setOnBindEditTextListener { editText ->
                 editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_SIGNED
             }
         }
-
-        //initSettingsValue()
     }
 
     // TODO : Probably useless. Check later. See https://developer.android.com/reference/androidx/preference/Preference#setPreferenceDataStore(androidx.preference.PreferenceDataStore)

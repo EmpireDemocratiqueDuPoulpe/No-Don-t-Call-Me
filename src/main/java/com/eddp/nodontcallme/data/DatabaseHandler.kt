@@ -2,9 +2,6 @@ package com.eddp.nodontcallme.data
 
 import android.content.ContentValues
 import android.content.Context
-import android.database.Cursor
-import android.database.DatabaseErrorHandler
-import android.database.SQLException
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
@@ -12,13 +9,8 @@ import com.eddp.nodontcallme.interfaces.DbObserver
 import com.eddp.nodontcallme.interfaces.ObservableDb
 import java.lang.Exception
 
-//class DatabaseHandler(
-//    context: Context?,
-//    factory: SQLiteDatabase.CursorFactory?,
-//    errorHandler: DatabaseErrorHandler?
-//) : SQLiteOpenHelper(context, DATABASE_NAME, factory, DATABASE_VERSION, errorHandler) {
-class DatabaseHandler private constructor(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION), ObservableDb {
-    private var ctx: Context? = context
+class DatabaseHandler private constructor(context: Context)
+    : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION), ObservableDb {
 
     override fun onCreate(db: SQLiteDatabase?) {
         db?.execSQL(CREATE_MISSED_CALLS_TABLE)
@@ -35,14 +27,10 @@ class DatabaseHandler private constructor(context: Context) : SQLiteOpenHelper(c
     fun addMissedCall(missedCall: MissedCall.CallItem) {
         val db: SQLiteDatabase = writableDatabase
 
-        Log.d("DB", "Add ${missedCall.phoneNumber} ?")
-
         // Update if the record already exist
         if (getMissedCall(missedCall.phoneNumber) != null) {
             return updateMissedCall(missedCall)
         }
-
-        Log.d("DB", "Adding ${missedCall.phoneNumber}")
 
         db.beginTransaction()
         try {
@@ -52,7 +40,6 @@ class DatabaseHandler private constructor(context: Context) : SQLiteOpenHelper(c
 
             db.insertOrThrow(TABLE_MISSED_CALLS, null, data)
             db.setTransactionSuccessful()
-            Log.d("DB", "Added ${missedCall.phoneNumber}")
         } catch (err: Exception) {
             Log.e("DB", "Exception: ${err.message}", err)
         } finally {
@@ -65,11 +52,11 @@ class DatabaseHandler private constructor(context: Context) : SQLiteOpenHelper(c
         val db: SQLiteDatabase = readableDatabase
         val missedCalls: MutableList<MissedCall.CallItem> = ArrayList()
 
-        val MISSED_CALLS_SELECT_QUERY: String =
+        val MISSED_CALLS_SELECT_QUERY =
             "SELECT $KEY_MISSED_CALLS_ID, $KEY_MISSED_CALLS_PHONE_NUMBER, $KEY_MISSED_CALLS_COUNT " +
             "FROM $TABLE_MISSED_CALLS"
 
-        val cursor: Cursor = db.rawQuery(MISSED_CALLS_SELECT_QUERY, null)
+        val cursor = db.rawQuery(MISSED_CALLS_SELECT_QUERY, null)
 
         // Exec the query
         try {
@@ -94,15 +81,15 @@ class DatabaseHandler private constructor(context: Context) : SQLiteOpenHelper(c
     }
 
     fun getMissedCall(phoneNumber: String) : MissedCall.CallItem? {
-        val db: SQLiteDatabase = readableDatabase
+        val db = readableDatabase
         var missedCall: MissedCall.CallItem? = null
 
-        val MISSED_CALL_SELECT_QUERY: String =
+        val MISSED_CALL_SELECT_QUERY =
             "SELECT $KEY_MISSED_CALLS_ID, $KEY_MISSED_CALLS_PHONE_NUMBER, $KEY_MISSED_CALLS_COUNT " +
             "FROM $TABLE_MISSED_CALLS " +
             "WHERE $KEY_MISSED_CALLS_PHONE_NUMBER = $phoneNumber"
 
-        val cursor: Cursor = db.rawQuery(MISSED_CALL_SELECT_QUERY, null)
+        val cursor = db.rawQuery(MISSED_CALL_SELECT_QUERY, null)
 
         // Exec the query
         try {
@@ -124,11 +111,9 @@ class DatabaseHandler private constructor(context: Context) : SQLiteOpenHelper(c
 
     fun updateMissedCall(missedCall: MissedCall.CallItem) {
         val currentRow: MissedCall.CallItem? = this.getMissedCall(missedCall.phoneNumber)
-        Log.d("DB", "Trying to update $currentRow")
 
         if (currentRow != null) {
-            Log.d("DB", "Updating ${missedCall.phoneNumber} from #calls_count = ${currentRow.callsCount}# to #calls_count = ${currentRow.callsCount + 1}#")
-            val db: SQLiteDatabase = writableDatabase
+            val db = writableDatabase
 
             val data = ContentValues()
             data.put(KEY_MISSED_CALLS_COUNT, currentRow.callsCount + 1)
@@ -142,7 +127,7 @@ class DatabaseHandler private constructor(context: Context) : SQLiteOpenHelper(c
     }
 
     fun deleteAll() {
-        val db: SQLiteDatabase = writableDatabase
+        val db = writableDatabase
         db.beginTransaction()
 
         try {

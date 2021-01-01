@@ -9,9 +9,9 @@ import android.view.animation.TranslateAnimation
 import android.widget.RelativeLayout
 
 class AnimatedHowToUse : RelativeLayout {
-    private lateinit var v: View
+    private lateinit var _v: View
 
-    private var animDuration: Long = 0
+    private var _animDuration: Long = 0
 
     // Initialisation
     constructor(context: Context) : super(context) {
@@ -23,10 +23,11 @@ class AnimatedHowToUse : RelativeLayout {
     }
 
    private fun initAnims() {
-        animDuration = resources.getInteger(android.R.integer.config_shortAnimTime).toLong()
+        this._animDuration = resources.getInteger(android.R.integer.config_shortAnimTime).toLong()
    }
 
-    fun setView(view: View) { this.v = view }
+    // Setters
+    fun setView(view: View) { this._v = view }
 
     // Functions
     fun toggle(open: Boolean) {
@@ -40,7 +41,7 @@ class AnimatedHowToUse : RelativeLayout {
             anim.setAnimationListener(AnimatedHowToUseCloseListener())
         }
 
-        anim.duration = animDuration
+        anim.duration = this._animDuration
         anim.interpolator = AccelerateInterpolator()
 
         startAnimation(anim)
@@ -48,7 +49,7 @@ class AnimatedHowToUse : RelativeLayout {
 
     // Listeners
     inner class AnimatedHowToUseOpenListener : Animation.AnimationListener {
-        override fun onAnimationStart(animation: Animation?) { v.visibility = View.VISIBLE }
+        override fun onAnimationStart(animation: Animation?) { _v.visibility = View.VISIBLE }
 
         override fun onAnimationEnd(animation: Animation?) { }
 
@@ -58,7 +59,7 @@ class AnimatedHowToUse : RelativeLayout {
     inner class AnimatedHowToUseCloseListener : Animation.AnimationListener {
         override fun onAnimationStart(animation: Animation?) { }
 
-        override fun onAnimationEnd(animation: Animation?) { v.visibility = View.GONE }
+        override fun onAnimationEnd(animation: Animation?) { _v.visibility = View.GONE }
 
         override fun onAnimationRepeat(animation: Animation?) { }
     }

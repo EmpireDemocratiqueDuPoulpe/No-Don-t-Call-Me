@@ -6,76 +6,50 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.os.Debug
 import android.util.Log
 import android.view.MenuItem
-import android.view.View
-import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.FragmentActivity
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
 import com.eddp.nodontcallme.data.DatabaseHandler
 import com.eddp.nodontcallme.data.MissedCall
 import com.eddp.nodontcallme.interfaces.DbObserver
-import com.eddp.nodontcallme.views.AnimatedHowToUse
-import com.eddp.nodontcallme.views.CustomChronometer
 import com.eddp.nodontcallme.views.MissedCallAdapter
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
-
 class MainActivity : AppCompatActivity(), DbObserver {
-    private var database: DatabaseHandler? = null
-    private var missedCalls: MutableList<MissedCall>? = null
-    private var missedCallAdapter: MissedCallAdapter? = null
+    private var _database: DatabaseHandler? = null
+    private var _missedCalls: MutableList<MissedCall>? = null
+    private var _missedCallAdapter: MissedCallAdapter? = null
 
-    private var serviceIntent: Intent? = null
-    private var callBlockerService: CallBlockerService? = null
-    private var callBlockerDataReceiver: CallBlockerDataReceiver? = null
+    private var _serviceIntent: Intent? = null
+    private var _callBlockerService: CallBlockerService? = null
+    private var _callBlockerDataReceiver: CallBlockerDataReceiver? = null
 
-    private lateinit var bottomNavBar: BottomNavigationView
-    private val bottomNavBarItems: MutableList<MenuItem> = ArrayList()
-    private var previousSelectedMenu: Int = 0
-
-    private lateinit var fragmentManager: FragmentManager
-
-    //private lateinit var howToUse: AnimatedHowToUse
-    //private lateinit var startBlockerBtn: Button
-    //private lateinit var chronometer: CustomChronometer
+    private lateinit var _viewPager: ViewPager2
+    private lateinit var _viewPagerAdapter: ViewPagerAdapter
+    private lateinit var _bottomNavBar: BottomNavBar
 
     // Getters
-    fun getMissedCalls() : MutableList<MissedCall>? { return this.missedCalls }
-    fun getMissedCallsAdapter() : MissedCallAdapter? { return this.missedCallAdapter }
+    fun getMissedCalls() : MutableList<MissedCall>? = this._missedCalls
+    fun getMissedCallsAdapter() : MissedCallAdapter? = this._missedCallAdapter
 
-    fun getServiceIntent() : Intent? { return this.serviceIntent }
-    fun getCallBlockerService() : CallBlockerService? { return this.callBlockerService }
-    fun getCallBlockerDataReceiver() : CallBlockerDataReceiver? { return this.callBlockerDataReceiver }
+    fun getServiceIntent() : Intent? = this._serviceIntent
+    fun getCallBlockerService() : CallBlockerService? = this._callBlockerService
+    fun getCallBlockerDataReceiver() : CallBlockerDataReceiver? = this._callBlockerDataReceiver
 
+    fun getViewPager() : ViewPager2 = this._viewPager
+
+    // Overridden functions
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        this.database = DatabaseHandler.getInstance(this)
-        this.database?.registerObserver(this)
-        this.missedCalls = this.database?.getMissedCalls() as MutableList<MissedCall>
-        this.missedCallAdapter = MissedCallAdapter(this)
-
-        if (this.missedCalls != null && this.missedCallAdapter != null) {
-            //missedCallAdapter = MissedCallAdapter(missedCalls!!)
-            this.missedCallAdapter!!.setData(this.missedCalls!!)
-
-            Log.d("DATA", "DATA START =====================================")
-            for (missedCall: MissedCall in missedCalls!!) {
-                if (missedCall is MissedCall.CallItem) {
-                    Log.d("DATA", "ID: ${missedCall.missedCallId} | PHONE: ${missedCall.phoneNumber} | COUNT: ${missedCall.callsCount}")
-                }
-            }
-            Log.d("DATA", "DATA END =======================================")
-        }
-
         // Ask for permission (Android 6.0+)
-        // TODO("CHECK IF NEEDED")
+        // TODO: Check if needed or for better way to do it
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_DENIED ||
                     checkSelfPermission(Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_DENIED ||
@@ -87,76 +61,39 @@ class MainActivity : AppCompatActivity(), DbObserver {
             }
         }
 
-        // Init view
-        fragmentManager = supportFragmentManager
+        // Get database and data
+        this._database = DatabaseHandler.getInstance(this)
+        this._database?.registerObserver(this)
+        this._missedCalls = this._database?.getMissedCalls() as MutableList<MissedCall>
+        this._missedCallAdapter = MissedCallAdapter(this)
 
-        fragmentManager.beginTransaction()
-            .replace(R.id.nav_host_fragment, CallBlockerFragment(), FRAGMENT_CALL_BLOCKER)
-            .addToBackStack(null)
-            .commit()
-
-        // Get elements
-        bottomNavBar = findViewById(R.id.bottom_nav_bar)
-        val menu = bottomNavBar.menu
-
-        for (i in 0 until menu.size()) {
-            bottomNavBarItems.add(menu.getItem(i))
+        if (this._missedCalls != null && this._missedCallAdapter != null) {
+            this._missedCallAdapter!!.setData(this._missedCalls!!)
         }
 
-        bottomNavBar.setOnNavigationItemSelectedListener(BottomNavBarListener())
-        //howToUse = findViewById(R.id.how_to_use)
-        //howToUse.setView(howToUse)
-        //startBlockerBtn = findViewById(R.id.btn_start_blocker)
-        //chronometer = findViewById(R.id.chronometer)
+        // Init view
+        this._bottomNavBar = BottomNavBar()
+
+        this._viewPager = findViewById(R.id.pager)
+        this._viewPagerAdapter = ViewPagerAdapter(this)
+        this._viewPager.adapter = this._viewPagerAdapter
+        this._viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                _bottomNavBar.setSelectedItem(position)
+            }
+        })
 
         // Get service
-        callBlockerService = CallBlockerService()
-        callBlockerDataReceiver = CallBlockerDataReceiver()
+        this._callBlockerService = CallBlockerService()
+        this._callBlockerDataReceiver = CallBlockerDataReceiver()
         val intentFilter = IntentFilter(DATA_RECEIVER_ACTION_CHRONOMETER_DATA)
 
-        registerReceiver(callBlockerDataReceiver, intentFilter)
+        registerReceiver(this._callBlockerDataReceiver, intentFilter)
 
-        if (callBlockerService != null) {
-            serviceIntent = Intent(this, callBlockerService!!::class.java)
-
-            //if (isServiceRunning(callBlockerService!!::class.java)) {
-            //    startBlockerBtn.text = CallBlockerBtnListener().enabledText
-            //    howToUse.toggle(false)
-            //    showChronometer(callBlockerDataReceiver?.getChronometerStartTime() ?: 0)
-            //} else {
-            //    startBlockerBtn.text = CallBlockerBtnListener().disabledText
-            //    howToUse.toggle(true)
-            //    hideChronometer()
-            //}
-//
-            //startBlockerBtn.setOnClickListener(CallBlockerBtnListener())
+        if (this._callBlockerService != null) {
+            this._serviceIntent = Intent(this, this._callBlockerService!!::class.java)
         }
-    }
-
-    //fun showChronometer(time: Long) {
-    //    chronometer.setStartTime(time)
-    //    chronometer.start()
-//
-    //    chronometer.animate().alpha(1f).setDuration(200)
-    //}
-//
-    //fun hideChronometer() {
-    //    chronometer.stop()
-//
-    //    chronometer.animate().alpha(0f).setDuration(200)
-    //}
-
-    // TODO("See https://stackoverflow.com/questions/45817813/alternate-of-activitymanager-getrunningservicesint-after-oreo")
-    fun isServiceRunning(serviceClass: Class<*>): Boolean {
-        val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-
-        for (service in manager.getRunningServices(Int.MAX_VALUE)) {
-            if (serviceClass.name == service.service.className) {
-                return true
-            }
-        }
-
-        return false
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -173,9 +110,15 @@ class MainActivity : AppCompatActivity(), DbObserver {
         }
     }
 
-    override fun onDestroy() {
-        //stopService(mServiceIntent);
+    override fun onBackPressed() {
+        if (this._viewPager.currentItem == 0) {
+            super.onBackPressed()
+        } else {
+            this._viewPager.currentItem = this._viewPager.currentItem - 1
+        }
+    }
 
+    override fun onDestroy() {
         //val broadcastIntent = Intent()
         //broadcastIntent.action = "restartservice"
         //broadcastIntent.setClass(this, Restarter::class.java)
@@ -184,41 +127,98 @@ class MainActivity : AppCompatActivity(), DbObserver {
         super.onDestroy()
     }
 
-    //inner class CallBlockerBtnListener : View.OnClickListener {
-    //    val disabledText: String = getString(R.string.btn_blocker_stopped)
-    //    val enabledText: String = getString(R.string.btn_blocker_started)
-//
-    //    override fun onClick(v: View?) {
-    //        if (v == null) return
-    //        if (v.id != R.id.btn_start_blocker) return
-//
-    //        if (isServiceRunning(callBlockerService!!::class.java)) {
-    //            stopService(serviceIntent)
-    //            startBlockerBtn.text = disabledText
-    //            howToUse.toggle(true)
-    //            hideChronometer()
-    //        } else {
-    //            startService(serviceIntent)
-    //            startBlockerBtn.text = enabledText
-    //            howToUse.toggle(false)
-    //        }
-    //    }
-    //}
+    // Database
+    override fun onDatabaseChanged() {
+        this._missedCalls = this._database?.getMissedCalls() as MutableList<MissedCall>
+
+        if (_missedCalls != null) {
+            this._missedCallAdapter?.setData(this._missedCalls!!)
+        }
+    }
+
+    // UI / Navigation
+    inner class BottomNavBar : BottomNavigationView.OnNavigationItemSelectedListener {
+        private var _bottomNavBar: BottomNavigationView = findViewById(R.id.bottom_nav_bar)
+        private val _items: MutableList<MenuItem> = ArrayList()
+        private var _previousSelectedMenu: Int = 0
+
+        init {
+            // Get menu items
+            val menu = this._bottomNavBar.menu
+
+            for (i in 0 until menu.size()) {
+                this._items.add(menu.getItem(i))
+            }
+
+            // Add events
+            this._bottomNavBar.setOnNavigationItemSelectedListener(this)
+        }
+
+        // Getters
+        fun getCurrentItem() : Int = this._bottomNavBar.selectedItemId
+
+        // Setters
+        fun setSelectedItem(position: Int) {
+            this._previousSelectedMenu = this._bottomNavBar.selectedItemId
+            this._items[position].isChecked = true
+        }
+
+        // Navigation
+        override fun onNavigationItemSelected(item: MenuItem): Boolean {
+            // Get current item pos
+            val itemPos = this._items.indexOf(item)
+            if (this._previousSelectedMenu == itemPos) return false
+
+            // Update
+            getViewPager().setCurrentItem(itemPos, true)
+            this._previousSelectedMenu = itemPos
+
+            return true
+        }
+    }
+
+    inner class ViewPagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activity) {
+        private val _fragments: List<Fragment> = listOf(
+                CallBlockerFragment(),
+                HistoryFragment(),
+                SettingsFragment()
+        )
+
+        fun getFragmentById(position: Int) : Fragment = this._fragments[position]
+
+        override fun getItemCount() : Int = this._fragments.size
+
+        override fun createFragment(position: Int) : Fragment = this._fragments[position]
+    }
+
+    // Service
+    // TODO: See https://stackoverflow.com/questions/45817813/alternate-of-activitymanager-getrunningservicesint-after-oreo
+    fun isServiceRunning(serviceClass: Class<*>): Boolean {
+        val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+
+        for (service in manager.getRunningServices(Int.MAX_VALUE)) {
+            if (serviceClass.name == service.service.className) {
+                return true
+            }
+        }
+
+        return false
+    }
 
     inner class CallBlockerDataReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-
             when (intent?.action) {
                 DATA_RECEIVER_ACTION_CHRONOMETER_DATA -> {
                     val chronometerStartTime: Long = getChronometerStartTime() ?: return
 
-                    var currentFragment: Fragment? = fragmentManager.findFragmentByTag(FRAGMENT_CALL_BLOCKER)
+                    val currentFragment: Fragment? =
+                            _viewPagerAdapter.getFragmentById(FRAGMENT_ID_CALL_BLOCKER)
 
                     if (currentFragment != null) {
-                        currentFragment = currentFragment as CallBlockerFragment
-
-                        if (currentFragment.isVisible) {
-                            currentFragment.showChronometer(chronometerStartTime)
+                        if (currentFragment is CallBlockerFragment) {
+                            if (currentFragment.isVisible) {
+                                currentFragment.showChronometer(chronometerStartTime)
+                            }
                         }
                     }
                 }
@@ -226,84 +226,20 @@ class MainActivity : AppCompatActivity(), DbObserver {
         }
 
         fun getChronometerStartTime() : Long? {
-            val sharedPrefs: SharedPreferences? = this@MainActivity.getSharedPreferences(getString(R.string.shared_pref_filename), MODE_PRIVATE)
+            val sharedPrefs: SharedPreferences? = this@MainActivity.getSharedPreferences(
+                    getString(R.string.shared_pref_filename),
+                    MODE_PRIVATE
+            )
             return sharedPrefs?.getLong("start_time", 0)
-        }
-    }
-
-    inner class BottomNavBarListener : BottomNavigationView.OnNavigationItemSelectedListener {
-        override fun onNavigationItemSelected(item: MenuItem): Boolean {
-            // Get current item pos
-            val itemPos = bottomNavBarItems.indexOf(item)
-            if (previousSelectedMenu == itemPos) return false
-
-            // Init transaction vars
-            var fragment: Fragment
-            var fragmentTag: String
-            var enterAnim: Int
-            var exitAnim: Int
-
-            when (item.itemId) {
-                R.id.menu_page_call_blocker -> {
-                    fragment = CallBlockerFragment()
-                    fragmentTag = FRAGMENT_CALL_BLOCKER
-                }
-                R.id.menu_page_history -> {
-                    fragment = HistoryFragment()
-                    fragmentTag = FRAGMENT_HISTORY
-                }
-                R.id.menu_page_settings -> {
-                    fragment = SettingsFragment()
-                    fragmentTag = FRAGMENT_SETTINGS
-                }
-                else -> {
-                    return false
-                }
-            }
-
-            if (previousSelectedMenu > itemPos) {
-                enterAnim = R.anim.slide_in_left
-                exitAnim = R.anim.slide_out_right
-            } else {
-                enterAnim = R.anim.slide_in_right
-                exitAnim = R.anim.slide_out_left
-            }
-
-            // Begin transaction
-            fragmentManager
-                    .beginTransaction()
-                    .setCustomAnimations(
-                            enterAnim,
-                            exitAnim,
-                            enterAnim,
-                            exitAnim)
-                    .replace(R.id.nav_host_fragment, fragment, fragmentTag)
-                    .addToBackStack(null)
-                    .commit()
-
-            // Update previous selected item
-            previousSelectedMenu = itemPos
-
-            return true
-        }
-    }
-
-    override fun onDatabaseChanged() {
-        Log.d("PROUT", "Database changed")
-        this.missedCalls = this.database?.getMissedCalls() as MutableList<MissedCall>
-
-        if (missedCalls != null) {
-            this.missedCallAdapter?.setData(this.missedCalls!!)
-            //this.missedCallAdapter?.notifyDataSetChanged()
         }
     }
 
     companion object {
         const val PERMISSION_REQUEST_READ_PHONE_STATE = 0
 
-        const val FRAGMENT_CALL_BLOCKER = "CALL_BLOCKER_FRAGMENT"
-        const val FRAGMENT_HISTORY = "HISTORY_FRAGMENT"
-        const val FRAGMENT_SETTINGS = "SETTING_FRAGMENT"
+        const val FRAGMENT_ID_CALL_BLOCKER = 0
+        const val FRAGMENT_ID_HISTORY = 0
+        const val FRAGMENT_ID_SETTINGS = 0
 
         const val DATA_RECEIVER_ACTION_CHRONOMETER_DATA = "CHRONOMETER_DATA"
     }
